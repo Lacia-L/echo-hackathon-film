@@ -188,9 +188,14 @@
   <div class="page" id="p-chat">
     <div style="margin-top:20px"><div class="brand" style="font-size:18px">与语镜聊聊</div></div>
     <div style="font-size:11px;color:var(--sub);margin:10px 2px 14px;line-height:1.7">它不替你做决定，只把逻辑理顺。<br>一个练习课题分离的对话者。</div>
-    <div id="chatBox" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div id="chatBox" style="display:flex;flex-direction:column;gap:10px;min-height:80px"></div>
     <div class="label">从这些问题开始</div>
     <div class="chips" id="chatQ"></div>
+    <div style="height:14px"></div>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <textarea id="chatInput" rows="1" style="flex:1" placeholder="也可以直接问我…"></textarea>
+      <button class="primary" style="width:80px;padding:12px" onclick="askFree()">发送</button>
+    </div>
   </div>
 
   <!-- 我的 -->
@@ -221,6 +226,7 @@
 
   <div class="tabbar">
     <div class="tab on" id="tabHome" onclick="goHome()"><div style="font-size:17px">◍</div><div style="font-size:10px">语镜</div></div>
+    <div class="tab" id="tabChat" onclick="goChat()"><div style="font-size:17px">✦</div><div style="font-size:10px">聊聊</div></div>
     <div class="tab" id="tabQuiz" onclick="goQuiz()"><div style="font-size:17px">✎</div><div style="font-size:10px">小测</div></div>
     <div class="tab" id="tabWall" onclick="goWall()"><div style="font-size:17px">✉</div><div style="font-size:10px">留言墙</div></div>
     <div class="tab" id="tabMine" onclick="goMine()"><div style="font-size:17px">≣</div><div style="font-size:10px">我的</div></div>
@@ -245,10 +251,12 @@ function show(id){document.querySelectorAll('.page').forEach(p=>p.classList.remo
 function go(id){show(id);sync(id);}
 function sync(id){const h=['p-home','p-text','p-audio','p-result'].includes(id);
  $('#tabHome').classList.toggle('on',h);
+ $('#tabChat').classList.toggle('on',id==='p-chat');
  $('#tabQuiz').classList.toggle('on',id==='p-quiz');
  $('#tabWall').classList.toggle('on',id==='p-wall');
  $('#tabMine').classList.toggle('on',id==='p-mine');}
 function goHome(){show('p-home');sync('p-home');}
+function goChat(){renderChatQ();show('p-chat');sync('p-chat');}
 function goQuiz(){renderQuiz();show('p-quiz');sync('p-quiz');}
 function goWall(){renderWall();show('p-wall');sync('p-wall');}
 function goMine(){renderRecs();show('p-mine');sync('p-mine');}
@@ -406,6 +414,15 @@ function renderWall(){$('#wallList').innerHTML=wall.map(w=>
   <p style="font-size:13px;line-height:1.75">${w.t}</p></div>`).join('');}
 function addWall(){const v=$('#wallInput').value.trim();if(!v)return;
  wall.unshift({n:'匿名 · 刚刚',t:v});$('#wallInput').value='';renderWall();}
+function askFree(){const v=$("#chatInput").value.trim();if(!v)return;$("#chatInput").value="";
+ const box=$("#chatBox");
+ box.innerHTML+=`<div style="align-self:flex-end;background:rgba(201,168,106,.18);padding:10px 14px;border-radius:14 14 4 14;font-size:13px;max-width:82%">${v}</div>`;
+ let a="语镜只做一件事：帮你把一句话拆成『他的课题』和『你的课题』。你可以换个问法，比如——他说的这句话，后果到底由谁承担？或者点上面的常见问题。";
+ if(/考|编|稳定|工作/.test(v)) a="你问的像是关于安稳。记住：他要你安稳，往往是他自己被『不确定』伤过。安稳可以是参考，但选哪条路、走得多险，后果由你承担，决定权就在你手里。";
+ else if(/焦虑|情绪|难受|哭|压力/.test(v)) a="先别评价自己的情绪。情绪来了，说明你在乎。但问一句：这股难受，是来自当下真实的困难，还是来自『怕让他失望』？后者，往往是他的课题，被你提前扛了过来。";
+ else if(/怎么|如何|怎么办/.test(v)) a="一个最简单的判断法：这件事最后谁承担结果，就归谁决定。他可以建议、警告、给经验，但签确认键的必须是你。你不必闹翻，也不必照单全收。";
+ box.innerHTML+=`<div style="align-self:flex-start;background:var(--panel2);border:1px solid var(--line);padding:13px 15px;border-radius:4 14 14 14;font-size:13px;line-height:1.8">${a}</div>`;
+ box.parentElement.scrollTop=box.parentElement.scrollHeight;}
 let rs=0,rt=null,ron=false;
 function toggleRec(){ron=!ron;const b=$('#recBtn');
  if(ron){b.style.background='var(--teal)';rs=0;$('#recT').textContent='00:00';
