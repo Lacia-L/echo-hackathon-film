@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Echo·语镜 — 把话听回它的来处</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:rgba(255,255,255,.045); --panel2:rgba(255,255,255,.07);
+    --ink:#ece7dd; --sub:#8b8a86; --line:rgba(255,255,255,.09);
+    --gold:#c9a86a; --teal:#7fa8a0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{background:
+       radial-gradient(1200px 700px at 50% -10%, #241f1c 0%, rgba(36,31,28,0) 55%),
+       radial-gradient(900px 600px at 100% 100%, #1a2022 0%, rgba(26,32,34,0) 55%),
+       linear-gradient(160deg,#16130f 0%,#101318 60%,#0e1116 100%);
+       color:var(--ink);font-family:-apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+       min-height:100vh;overflow-x:hidden;}
+  #fx{position:fixed;inset:0;z-index:0;overflow:hidden;}
+  .bubble{position:absolute;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.16),rgba(255,255,255,.02));
+       border:1px solid rgba(255,255,255,.06);bottom:-40px;animation:rise linear infinite;}
+  @keyframes rise{from{transform:translateY(0) translateX(0);opacity:0;}
+       10%{opacity:.7;} to{transform:translateY(-110vh) translateX(var(--sway));opacity:0;}}
+  .halo{position:fixed;width:680px;height:680px;border-radius:50%;z-index:0;pointer-events:none;
+        background:radial-gradient(circle,rgba(201,168,106,.12),transparent 62%);top:10%;left:50%;transform:translateX(-50%);
+        animation:breathe 9s ease-in-out infinite alternate;}
+  @keyframes breathe{from{transform:translateX(-50%) scale(1);opacity:.7;}to{transform:translateX(-50%) scale(1.12);opacity:1;}}
+  /* 中心螺旋回声粒子 */
+  .spiral{position:fixed;top:42%;left:50%;z-index:0;pointer-events:none;width:520px;height:520px;
+        transform:translate(-50%,-50%);animation:spin 40s linear infinite;opacity:.5;}
+  @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg);}}
+  .spiral i{position:absolute;left:50%;top:50%;width:5px;height:5px;border-radius:50%;background:var(--gold);}
+
+  .wrap{position:relative;z-index:2;max-width:460px;margin:0 auto;min-height:100vh;
+        display:flex;flex-direction:column;padding:28px 22px 90px;}
+  .top{display:flex;justify-content:space-between;align-items:center;}
+  .brand{font-size:16px;font-weight:600;letter-spacing:1px;}
+  .brand small{display:block;font-size:10px;font-weight:400;color:var(--sub);letter-spacing:0;margin-top:3px;}
+  .kicker{font-size:10px;color:var(--gold);border:1px solid rgba(201,168,106,.35);padding:5px 11px;border-radius:20px;letter-spacing:1px;}
+
+  .page{display:none;animation:fade .3s ease-out;}
+  .page.on{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+
+  .hero{margin:30px 0 22px;}
+  .hero h1{font-size:30px;line-height:1.35;font-weight:600;letter-spacing:-.5px;}
+  .hero h1 em{font-style:normal;color:var(--gold);}
+  .hero p{font-size:13px;color:var(--sub);line-height:1.8;margin-top:12px;}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(8px);}
+  .feature{position:relative;padding:22px;cursor:pointer;overflow:hidden;
+        background:linear-gradient(135deg,rgba(201,168,106,.16),rgba(127,168,160,.10));
+        border:1px solid rgba(201,168,106,.25);transition:transform .3s ease-out,border-color .3s;}
+  .feature:hover{transform:translateY(-3px);border-color:rgba(201,168,106,.5);}
+  .feature .ftag{font-size:10px;color:var(--gold);letter-spacing:2px;}
+  .feature .fq{font-size:16.5px;font-weight:600;margin:10px 0 6px;line-height:1.5;}
+  .feature .fhint{font-size:11.5px;color:var(--sub);}
+  .feature .arrow{position:absolute;right:18px;bottom:18px;color:var(--gold);}
+
+  .row{display:flex;gap:12px;margin:16px 0;}
+  .sm{flex:1;padding:18px 10px;text-align:center;cursor:pointer;transition:transform .3s,border-color .3s;}
+  .sm:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.22);}
+  .sm .ic{font-size:22px;margin-bottom:8px;}
+  .sm .t{font-size:13px;font-weight:600;}
+  .sm .d{font-size:10.5px;color:var(--sub);margin-top:4px;}
+
+  .label{font-size:11px;letter-spacing:2px;color:var(--sub);margin:22px 2px 12px;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:9px 13px;font-size:12px;cursor:pointer;
+        color:#c9c4ba;transition:border-color .25s,color .25s;}
+  .chip:hover{border-color:var(--gold);color:var(--gold);}
+
+  textarea,input{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:14px;color:var(--ink);
+     padding:14px;font-size:14px;font-family:inherit;resize:none;line-height:1.7;}
+  textarea:focus,input:focus{outline:none;border-color:var(--gold);}
+  ::placeholder{color:#6b6a66;}
+  .primary{background:var(--gold);color:#1a150c;border:none;padding:15px;border-radius:12px;font-size:15px;font-weight:600;
+     cursor:pointer;width:100%;transition:transform .25s;}
+  .primary:hover{transform:scale(1.02);}
+  .back{color:var(--gold);font-size:14px;cursor:pointer;}
+
+  .sec{padding:18px;margin-bottom:12px;}
+  .sec .h{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--sub);letter-spacing:1px;margin-bottom:10px;}
+  .sec .h .n{width:22px;height:22px;border-radius:50%;border:1px solid var(--gold);color:var(--gold);
+        display:flex;align-items:center;justify-content:center;font-size:11px;}
+  .sec p{font-size:13.5px;line-height:1.85;color:#d8d2c7;}
+  .sec .echo{background:linear-gradient(135deg,rgba(201,168,106,.12),rgba(127,168,160,.08));
+        border-left:2px solid var(--gold);border-radius:10px;padding:13px 14px;margin-top:11px;font-size:12.5px;color:#cfc8bb;line-height:1.75;}
+  .sec .echo b{color:var(--gold);}
+  .quote{text-align:center;font-size:13px;color:var(--gold);margin:8px 0 12px;line-height:1.7;}
+
+  .stat{padding:20px;margin-bottom:14px;}
+  .stat .num{font-size:30px;font-weight:600;color:var(--gold);}
+  .stat .lab{font-size:12px;color:var(--sub);margin-top:8px;line-height:1.8;}
+  .rec-item{padding:15px 16px;margin-bottom:11px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;transition:border-color .25s;}
+  .rec-item:hover{border-color:rgba(201,168,106,.4);}
+  .rec-item .q{font-size:13.5px;font-weight:600;}
+  .rec-item .meta{font-size:10.5px;color:var(--sub);margin-top:4px;}
+  .tag-his{font-size:10px;color:var(--gold);border:1px solid rgba(201,168,106,.4);padding:4px 10px;border-radius:20px;white-space:nowrap;}
+  .tag-self{font-size:10px;color:var(--teal);border:1px solid rgba(127,168,160,.4);padding:4px 10px;border-radius:20px;white-space:nowrap;}
+
+  .recbox{display:flex;flex-direction:column;align-items:center;gap:20px;padding:40px 0;}
+  .recdot{width:96px;height:96px;border-radius:50%;background:var(--gold);color:#1a150c;display:flex;align-items:center;
+        justify-content:center;font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:transform .2s;}
+  .rectime{font-size:44px;font-weight:300;letter-spacing:2px;}
+  .recline{font-size:12.5px;color:var(--sub);text-align:center;line-height:1.7;}
+
+  .tabbar{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);width:calc(100% - 44px);max-width:416px;height:58px;z-index:5;
+        background:rgba(20,22,28,.85);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:20px;display:flex;}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--sub);}
+  .tab.on{color:var(--gold);}
+</style>
+</head>
+<body>
+<div id="fx"></div><div class="halo"></div><div class="spiral" id="spiral"></div>
+
+<div class="wrap">
+  <div class="top">
+    <div class="brand">Echo·语镜<small>把话，听回它的来处</small></div>
+    <div class="kicker">RECORDED · LOCAL</div>
+  </div>
+
+  <!-- 首页 -->
+  <div class="page on" id="p-home">
+    <div class="hero">
+      <h1>先听见回声，<br>再决定<em>下一个音</em>。</h1>
+      <p>别人说出口的每句话，都是他过往经历的一次回响。语镜替你把这声回响还原成它的来处——不是替谁开脱，也不是反驳谁。它只是让你看清：哪一部分属于他的过去，哪一部分才轮到你自己选择。<br><br>被教育者，借此听懂"关心"背后的怕；教育者，借此照见自己——我有没有把当年没走完的路，说成了他必须走的前途。</p>
+    </div>
+
+    <div class="feature" onclick="runText('妈都是为了你好，没有编制，你以后什么都不是。')">
+      <div class="ftag">今天试一句</div>
+      <div class="fq">「没有编制，你以后什么都不是。」</div>
+      <div class="fhint">听出这句话背后，那场一九九八年的雪</div>
+      <div class="arrow">→</div>
+    </div>
+
+    <div class="row">
+      <div class="card sm" onclick="go('p-text')"><div class="ic">✍️</div><div class="t">一句他说的话</div><div class="d">指令 / 唠叨 / 关心</div></div>
+      <div class="card sm" onclick="go('p-audio')"><div class="ic">🎙️</div><div class="t">录一段音</div><div class="d">带语气更准</div></div>
+      <div class="card sm" onclick="go('p-photo')"><div class="ic">🖼️</div><div class="t">一张老照片</div><div class="d">读褪色与岁月</div></div>
+    </div>
+
+    <div class="label">从这些话开始</div>
+    <div class="chips">
+      <div class="chip" onclick="runText('我吃过的盐比你吃过的米多，听我的准没错。')">「听我的，准没错」</div>
+      <div class="chip" onclick="runText('都是为你好，以后你会感谢我。')">「以后你会感谢我」</div>
+      <div class="chip" onclick="runText('我们那时候，可比你苦多了。')">「我们那时候更苦」</div>
+      <div class="chip" onclick="runText('你是个聪明孩子，别让我们失望。')">「别让我们失望」</div>
+      <div class="chip" onclick="runText('在外别出头，安稳最重要。')">「安稳最重要」</div>
+    </div>
+  </div>
+
+  <!-- 文本 -->
+  <div class="page" id="p-text">
+    <div style="margin-top:20px"><span class="back" onclick="go('p-home')">‹ 返回</span></div>
+    <div class="hero" style="margin:18px 0"><h1 style="font-size:23px">这句话，是谁说的？</h1></div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <div id="modeOther" onclick="setMode(false)" style="flex:1;text-align:center;padding:10px;border-radius:12px;cursor:pointer;border:1px solid var(--gold);color:var(--gold);font-size:12.5px">别人对我说的</div>
+      <div id="modeMine" onclick="setMode(true)" style="flex:1;text-align:center;padding:10px;border-radius:12px;cursor:pointer;border:1px solid var(--line);color:var(--sub);font-size:12.5px">我对别人说的</div>
+    </div>
+    <textarea id="txtLine" rows="4" placeholder="他对你说的 / 你常对他说的一句话…"></textarea>
+    <div style="height:12px"></div>
+    <div style="font-size:11px;color:var(--sub);margin-bottom:16px">试试：
+      <span style="color:var(--gold);cursor:pointer" onclick="$('#txtLine').value='妈都是为了你好，没有编制，你以后什么都不是。'">「没编制你什么都不是」</span></div>
+    <button class="primary" onclick="runText()">还原这句话</button>
+  </div>
+
+  <!-- 录音 -->
+  <div class="page" id="p-audio">
+    <div style="margin-top:20px"><span class="back" onclick="go('p-home')">‹ 返回</span></div>
+    <div class="recbox">
+      <div class="rectime" id="recT">00:00</div>
+      <div class="recline">按住 · 说出那句话<br>（演示用，不调用真实麦克风）</div>
+      <div class="recdot" id="recBtn" onclick="toggleRec">按住<br>说话</div>
+      <button class="primary" style="max-width:240px" onclick="runText('都是为你好，以后你会感谢我的。')">用演示这句</button>
+    </div>
+  </div>
+
+  <!-- 照片 -->
+  <div class="page" id="p-photo">
+    <div style="margin-top:20px"><span class="back" onclick="go('p-home')">‹ 返回</span></div>
+    <div class="hero" style="margin:18px 0"><h1 style="font-size:23px">一张旧照片</h1></div>
+    <div class="card" style="padding:10px;cursor:pointer" onclick="$('#fileInput').click()">
+      <div id="photoPrev" style="height:160px;border-radius:12px;overflow:hidden;background:#2a2622;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
+        <span style="font-size:26px">🖼️</span>
+        <span style="font-size:12px;color:var(--sub)">点击上传一张老照片（本地预览，不上传服务器）</span>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="loadPhoto(this)">
+    </div>
+    <div class="label">补充（选填）</div>
+    <input placeholder="大概年代"><div style="height:10px"></div>
+    <input placeholder="在哪拍的"><div style="height:10px"></div>
+    <textarea rows="2" placeholder="当时发生了什么？"></textarea>
+    <div style="height:16px"></div>
+    <button class="primary" onclick="runPhoto()">还原这张照片</button>
+  </div>
+
+  <!-- 结果 -->
+  <div class="page" id="p-result">
+    <div style="margin-top:20px"><span class="back" onclick="go('p-home')">‹ 再试一句</span></div>
+    <div class="hero" style="margin:16px 0 14px"><h1 style="font-size:23px">这句话的<em>回声</em></h1></div>
+    <div id="resBody"></div>
+  </div>
+
+  <!-- 与语镜聊聊 -->
+  <div class="page" id="p-chat">
+    <div style="margin-top:20px"><div class="brand" style="font-size:18px">与语镜聊聊</div></div>
+    <div style="font-size:11px;color:var(--sub);margin:10px 2px 14px;line-height:1.7">它不替你做决定，只把逻辑理顺。<br>一个练习课题分离的对话者。</div>
+    <div id="chatBox" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div class="label">从这些问题开始</div>
+    <div class="chips" id="chatQ"></div>
+  </div>
+
+  <!-- 我的 -->
+  <div class="page" id="p-mine">
+    <div style="margin-top:20px" class="brand" style="font-size:19px">我的回声记录</div>
+    <div class="label">已还原的话</div>
+    <div class="card stat"><div class="num" id="recCount">4</div>
+      <div class="lab">次倾听。我们借这句话，看清了他的来路，<br>也更清楚：哪部分是他的课题，哪部分才是你的。</div></div>
+    <div id="recList"></div>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab on" id="tabHome" onclick="goHome()"><div style="font-size:17px">◍</div><div style="font-size:10px">语镜</div></div>
+    <div class="tab" id="tabChat" onclick="goChat()"><div style="font-size:17px">✦</div><div style="font-size:10px">聊聊</div></div>
+    <div class="tab" id="tabMine" onclick="goMine()"><div style="font-size:17px">≣</div><div style="font-size:10px">我的回声</div></div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+/* 气泡粒子 */
+(function(){const fx=$('#fx');for(let i=0;i<22;i++){const b=document.createElement('div');b.className='bubble';
+ const s=6+Math.random()*22;b.style.width=b.style.height=s+'px';b.style.left=Math.random()*100+'%';
+ b.style.animationDuration=(9+Math.random()*12)+'s';b.style.animationDelay=(-Math.random()*15)+'s';
+ b.style.setProperty('--sway',(Math.random()*80-40)+'px');fx.appendChild(b);}})();
+/* 螺旋：阿基米德螺线分布的点 */
+(function(){const sp=$('#spiral');const N=46;
+ for(let i=0;i<N;i++){const a=i*0.55;const r=10+i*5.2;const d=document.createElement('i');
+  d.style.transform=`translate(${Math.cos(a)*r-2}px,${Math.sin(a)*r-2}px)`;
+  d.style.opacity=Math.max(.05,1-r/260);d.style.width=d.style.height=(3+r*0.03)+'px';
+  sp.appendChild(d);}})();
+
+function show(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));$('#'+id).classList.add('on');}
+function go(id){show(id);sync(id);}
+function sync(id){const h=['p-home','p-text','p-audio','p-photo','p-result'].includes(id);
+ $('#tabHome').classList.toggle('on',h);
+ $('#tabChat').classList.toggle('on',id==='p-chat');
+ $('#tabMine').classList.toggle('on',id==='p-mine');}
+function goHome(){show('p-home');sync('p-home');}
+function goChat(){renderChatQ();show('p-chat');sync('p-chat');}
+function goMine(){renderRecs();show('p-mine');sync('p-mine');}
+
+/* 高认知对话者：阿德勒课题分离 + 教育辩证，不站队、逻辑清晰 */
+const QA=[
+ {q:'父母说“都是为你好”，我该全盘接受吗？',
+  a:'先把两件事拆开：<b>他的动机</b>和<b>他的指令</b>。“为你好”多半是真的关心，这部分值得感谢；但“所以你必须照做”是他把自己的判断强加给你。\n\n课题分离的判断标准很简单——这件事的后果最终由谁承担？由你承担，决定就该由你做。他可以给建议、给警告、给经验，但签确认键的必须是你。\n\n你可以既不闹翻、也不照单全收：“我知道你是为我好，这件事我想自己试一次。”'},
+ {q:'我想给下一代“更好的教育”，这算不算控制？',
+  a:'这是最容易混淆的一点。判断标准不是“我是不是出于爱”，而是——<b>我在帮他成为他自己，还是在复制一个我认可的版本？</b>\n\n教育和控制往往穿同一件外衣。区别在于：教育留了一个出口，允许他反驳、走另一条路；控制没有，他一旦偏离，你就焦虑、内疚、施压。\n\n所以真正的问题不是“我该不该教”，而是“我教完之后，他是不是更有能力自己选了”。'},
+ {q:'怎么分清“他的课题”和“我的课题”？',
+  a:'问三个问题：\n1. 这件事最后谁来承担结果？\n2. 如果我不插手，他有没有能力自己面对？\n3. 我此刻的担心，是来自他当下的真实处境，还是来自我自己过去的阴影？\n\n第三个问题最关键。很多时候我们“为他操心”，操心的其实是当年那个无助的自己。把那个认出来，你的手就松了一半。'},
+ {q:'被别人的期待困住，我该怎么办？',
+  a:'期待本身不是枷锁，<b>你对期待的默认偿还方式</b>才是。\n\n别人对你有期待，那是他的课题；你怎么活，是你的课题。你可以感激他的期待，但不必用整个人生去兑现。\n\n一个练习：下次因“让他失望”而痛苦时，在心里分两行写——“我想做的”和“他想我做的”。先别急着选，看清两行到底是不是同一件事，再决定怎么走。'},
+ {q:'“希望教育对下一个像我的人更好”，错了吗？',
+  a:'没有错，这恰恰是最珍贵的心愿。但它有个陷阱：你心中的”更好”，是用你的经历丈量出来的。\n\n教育的本质不是替他规划，而是帮他发掘真正的自我、在现实里追求自己想要的、遇见更好的自己——而那个”更好”长什么样，得由他自己长出来，不能由你画好图纸。\n\n你吃过的苦、躲过的坑都真实，但下一个人活在一个你没经历过的时代。把”我当年缺什么”当成”他现在需要什么”，是一种温柔的僭越。\n\n更好的祝愿是：<b>愿他不必复制我的路，也能在现实里站稳，去追他真正想要的。</b>你负责给他托底的安全感，而不是替他选方向。'}
+];
+let chatInit=false;
+function renderChatQ(){if(chatInit)return;chatInit=true;
+ $('#chatQ').innerHTML=QA.map((x,i)=>`<div class="chip" onclick="askQ(${i})">${x.q}</div>`).join('');}
+function askQ(i){const box=$('#chatBox');
+ box.innerHTML+=`<div style="align-self:flex-end;background:rgba(201,168,106,.18);padding:10px 14px;border-radius:14 14 4 14;font-size:13px;max-width:82%">${QA[i].q}</div>`;
+ box.innerHTML+=`<div style="align-self:flex-start;background:var(--panel2);border:1px solid var(--line);padding:13px 15px;border-radius:4 14 14 14;font-size:13px;line-height:1.8;white-space:pre-line">${QA[i].a}</div>`;
+ box.parentElement.scrollTop=box.parentElement.scrollHeight;
+ document.querySelectorAll('#chatQ .chip').forEach(c=>c.style.opacity=.4);
+}
+
+/* 剧本内核：把"指令"还原成"记忆"，再落到课题分离 */
+const DB=[
+ {key:'编制',
+  said:'「没有编制，你以后什么都不是。」',
+  echo:'她五十岁了，戴的套袖洗得发白。这句话背后是一九九八年的雪：二十岁的她抱着纸箱站在国棉三厂门口，一夜之间没了“铁饭碗”。她不是在评价你，是那场雪冻透了她对“不确定”的所有安全感。',
+  why:'她对编制的偏执，来自她那个年代的下岗与失业。这是她用了三十年才学会的生存恐惧，是她的课题——不是你人生的标准答案。',
+  do:'<b>你可以：</b>接住她的担心（“妈，我知道你怕我不稳”），再平静说你的安排。共情她的来路，但不必替她重买那个铁饭碗。',
+  quote:'她不是要你平庸，她只是太怕你受她受过的冷。'},
+ {key:'听我的',
+  said:'「我吃过的盐比你吃过的米多，听我的准没错。」',
+  echo:'这句话背后，往往是他当年凭经验躲过的一次具体的坑，以及一次没人教他、他硬扛过来的狼狈。他把那次经验当成了普世真理。',
+  why:'经验是真的，但属于他的时代与处境。把它当圣旨照做，等于用他的地图走你的路。这是他的功课沉淀，不是你的导航。',
+  do:'<b>你可以：</b>说“我记下了”，然后自己去验证。采纳结论，不交出决定权。',
+  quote:'吃过的盐是他的，咸淡得你自己尝。'},
+ {key:'感谢',
+  said:'「都是为你好，以后你会感谢我的。」',
+  echo:'他在用一个未来的承诺，抵押你现在的选择。背后是他希望自己的付出被看见、被追认——他需要的是你的感激，而不是你真正过得好。',
+  why:'“以后感谢我”把判断权从你手里拿走，仿佛你当下的意愿不算数。这是他想要的回报。',
+  do:'<b>你可以：</b>感谢他的付出，但分开说——“我记得你的好”和“这件我想自己定”，可以同时成立。',
+  quote:'感激是真的，但别预付成一段不想要的路。'},
+ {key:'苦',
+  said:'「我们那时候，可比你苦多了。」',
+  echo:'他说的苦是真的，但这句话真正在做的，是让你停止喊累、停止追求更好的活法。它把“他的忍耐”当成了你也必须忍耐的理由。',
+  why:'他吃过的苦是他的命途，不该成为你拒绝改善的理由。这是他对“吃苦”的信念，不是你的义务。',
+  do:'<b>你可以：</b>承认他的不易，同时温柔地说：“正因为你们苦过，我才想试着不那么苦。”',
+  quote:'上一代吃过苦，不该是下一代继续苦的理由。'},
+ {key:'失望',
+  said:'「你是聪明孩子，别让我们失望。」',
+  echo:'这是一句温柔的枷锁。他把“我的自我价值”挂在了你能不能满足他的期待上。你一旦没做到，仿佛欠了他。',
+  why:'他的期待里藏着他当年没完成的愿望。你优秀，是为你自己；让谁满意，不该是你人生的主目标。这是他的期待，不是你的 KPI。',
+  do:'<b>你可以：</b>努力，但分得清“我想做好”和“怕他失望”。为前者全力以赴，为后者留一点余量。',
+  quote:'你不必用一生，去兑现别人没说出口的期待。'},
+ {key:'安稳',
+  said:'「在外别出头，安稳最重要。」',
+  echo:'背后是他曾经因为“出头”而付出的代价，或见过别人出头后的遭遇。他把那次恐惧，浓缩成了给你的保命指南。',
+  why:'他怕的是他记忆里的世界，不一定是你现在的世界。安稳是他的安全感需求，不该替你决定要不要去闯。',
+  do:'<b>你可以：</b>先小步试，用可控的代价去换“出头”的经验，再让事实告诉他你能站稳。',
+  quote:'他给你的伞很好，但天空是你的。'}
+];
+function pick(t){for(const d of DB)if(t.includes(d.key))return d;
+ return {said:'他说过的那句话。',
+  echo:'语镜还没拿到足够细节。一般来说，一句重话背后都藏着他经历过的某个具体场景——一次失去、一次被拒、一次没人帮他的时刻。',
+  why:'他的反应强度，往往和那件旧事成正比，而和你当下实际做了什么关系不大。那是他的过往。',
+  do:'<b>你可以：</b>先别反驳他的情绪，问一句“你是不是以前吃过这方面的亏？”——把指令还原成故事。',
+  quote:'他的话是回声，源头在他身后。'};}
+
+let records=[
+ {q:'「没编制你什么都不是」',who:'母亲 · 今晚',tag:'his',data:DB[0]},
+ {q:'厂门口 · 1998（照片）',who:'母亲年轻时',tag:'my',photo:true},
+ {q:'「以后你会感谢我」',who:'父亲 · 上周',tag:'his',data:DB[2]},
+];
+function renderRecs(){$('#recCount').textContent=records.length;
+  $('#recList').innerHTML=records.map((r,i)=>
+    `<div class="card rec-item" onclick="openRec(${i})">
+      <div><div class="q">${r.q}</div><div class="meta">${r.who}</div></div>
+      <div class="${r.tag==='his'?'tag-his':'tag-self'}">${r.tag==='his'?'他的回声':'你的选择'}</div></div>`).join('');}
+function openRec(i){const r=records[i]; if(r.photo) runPhoto(); else render(r.said||r.q.replace(/[「」]/g,''),r.data,false);}
+
+let myself=false;
+function setMode(m){myself=m;
+ $('#modeOther').style.borderColor=m?'var(--line)':'var(--gold)';$('#modeOther').style.color=m?'var(--sub)':'var(--gold)';
+ $('#modeMine').style.borderColor=m?'var(--gold)':'var(--line)';$('#modeMine').style.color=m?'var(--gold)':'var(--sub)';}
+function render(line,d,save=true,mine=false){
+  if(save) records.unshift({q:'「'+line+'」',who:(mine?'我对他说':'他对我说')+' · 刚才',tag:'his',data:d});
+  if(!mine){
+  $('#resBody').innerHTML=`
+   <div class="card sec"><div class="h"><div class="n">1</div>他说出口的</div><p>「${line}」</p></div>
+   <div class="card sec"><div class="h"><div class="n">2</div>语镜还原 · 他没说出口的记忆</div>
+      <div class="echo">${d.echo}</div></div>
+   <div class="card sec"><div class="h"><div class="n">3</div>这是谁的课题</div><p>${d.why}</p></div>
+   <div class="card sec"><div class="h"><div class="n">4</div>你的回应 · 课题分离</div>
+      <div class="echo">${d.do}</div></div>
+   <div class="quote">${d.quote}</div>
+   <p style="font-size:10.5px;color:#6b6a66">* 本地推演 · 仅供练习，不读取你的真实数据。</p>`;
+  }else{
+  $('#resBody').innerHTML=`
+   <div style="font-size:11px;color:var(--gold);margin-bottom:10px">你现在是站在<b>说这句话的人</b>这一边</div>
+   <div class="card sec"><div class="h"><div class="n">1</div>你说出口的</div><p>「${line}」</p></div>
+   <div class="card sec"><div class="h"><div class="n">2</div>语镜还原 · 这句话背后，你自己没说出口的</div>
+      <div class="echo">${d.echo.replace(/她|他/g,'我')}</div></div>
+   <div class="card sec"><div class="h"><div class="n">3</div>小心：你在把它变成谁的课题</div>
+      <p>你这句关心里，混进了<b>你自己当年的经验和不安</b>。你是在帮他，还是在用他的人生，缓解自己的焦虑？这部分焦虑，其实是你的课题，不是他的。</p></div>
+   <div class="card sec"><div class="h"><div class="n">4</div>下次开口之前，停一秒</div>
+      <div class="echo">把你的经验、担心、建议告诉他——这是爱；但把"必须照做"也压上去，就是控制了。地图你可以给，路让他自己走。</div></div>
+   <div class="quote">${d.quote}</div>`;
+  }
+  go('p-result');
+}
+function runText(preset){const line=preset||$('#txtLine').value.trim()||'妈都是为了你好，没有编制，你以后什么都不是。';render(line,pick(line),true,myself);}
+function runPhoto(){
+  records.unshift({q:'厂门口 · 1998（照片）',who:'刚才 · 现在',tag:'my',photo:true});
+  $('#resBody').innerHTML=`
+   <div class="card sec"><div class="h"><div class="n">1</div>这张照片</div><p>按褪色与工装，约 1998 年、某棉纺厂门口。年轻女子抱着纸箱、套袖还新，像在收拾最后一个工位。</p></div>
+   <div class="card sec"><div class="h"><div class="n">2</div>语镜还原</div><div class="echo">那是下岗潮里无数个清晨之一。她当年的慌张，被后来一句句“为你好”盖了三十年。</div></div>
+   <div class="card sec"><div class="h"><div class="n">3</div>课题分离</div><p>她的雪是她那代人的；你要走的路是你的。看见她，不必把自己也活成她。</p></div>
+   <div class="quote">理解一个人从哪来，才不被迫复制他的路。</div>`;
+  go('p-result');
+}
+let rs=0,rt=null,ron=false;
+function loadPhoto(inp){const f=inp.files[0];if(!f)return;const url=URL.createObjectURL(f);
+ const box=$('#photoPrev');box.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:cover">`;}
+function toggleRec(){ron=!ron;const b=$('#recBtn');
+ if(ron){b.style.background='var(--teal)';rs=0;$('#recT').textContent='00:00';
+  rt=setInterval(()=>{rs++;$('#recT').textContent=String(Math.floor(rs/60)).padStart(2,'0')+':'+String(rs%60).padStart(2,'0');},1000);}
+ else{b.style.background='var(--gold)';clearInterval(rt);}}
+</script>
+</body>
+</html>
