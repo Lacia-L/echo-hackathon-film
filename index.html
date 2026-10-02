@@ -137,9 +137,8 @@
     </div>
 
     <div class="row">
-      <div class="card sm" onclick="go('p-text')"><div class="ic">✍️</div><div class="t">一句他说的话</div><div class="d">指令 / 唠叨 / 关心</div></div>
+      <div class="card sm" onclick="go('p-text')"><div class="ic">✍️</div><div class="t">一句话</div><div class="d">说过的 / 听到的</div></div>
       <div class="card sm" onclick="go('p-audio')"><div class="ic">🎙️</div><div class="t">录一段音</div><div class="d">带语气更准</div></div>
-      <div class="card sm" onclick="go('p-photo')"><div class="ic">🖼️</div><div class="t">一张老照片</div><div class="d">读褪色与岁月</div></div>
     </div>
 
     <div class="label">从这些话开始</div>
@@ -178,25 +177,6 @@
     </div>
   </div>
 
-  <!-- 照片 -->
-  <div class="page" id="p-photo">
-    <div style="margin-top:20px"><span class="back" onclick="go('p-home')">‹ 返回</span></div>
-    <div class="hero" style="margin:18px 0"><h1 style="font-size:23px">一张旧照片</h1></div>
-    <div class="card" style="padding:10px;cursor:pointer" onclick="$('#fileInput').click()">
-      <div id="photoPrev" style="height:160px;border-radius:12px;overflow:hidden;background:#2a2622;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
-        <span style="font-size:26px">🖼️</span>
-        <span style="font-size:12px;color:var(--sub)">点击上传一张老照片（本地预览，不上传服务器）</span>
-      </div>
-      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="loadPhoto(this)">
-    </div>
-    <div class="label">补充（选填）</div>
-    <input placeholder="大概年代"><div style="height:10px"></div>
-    <input placeholder="在哪拍的"><div style="height:10px"></div>
-    <textarea rows="2" placeholder="当时发生了什么？"></textarea>
-    <div style="height:16px"></div>
-    <button class="primary" onclick="runPhoto()">还原这张照片</button>
-  </div>
-
   <!-- 结果 -->
   <div class="page" id="p-result">
     <div style="margin-top:20px"><span class="back" onclick="go('p-home')">‹ 再试一句</span></div>
@@ -222,10 +202,28 @@
     <div id="recList"></div>
   </div>
 
+  <!-- 小测 -->
+  <div class="page" id="p-quiz">
+    <div style="margin-top:20px" class="brand" style="font-size:19px">课题分离 · 小测</div>
+    <div style="font-size:11px;color:var(--sub);margin:10px 2px 16px;line-height:1.7">4 道小题，帮你快速练会：<br>这句话，到底是谁的事？</div>
+    <div id="quizBox"></div>
+  </div>
+
+  <!-- 留言墙 -->
+  <div class="page" id="p-wall">
+    <div style="margin-top:20px" class="brand" style="font-size:19px">回声留言墙</div>
+    <div style="font-size:11px;color:var(--sub);margin:10px 2px 12px;line-height:1.7">匿名。不同的人，对同一句话有不同的解读。</div>
+    <textarea id="wallInput" rows="2" placeholder="写下你对某句话的解读，或你希望教育怎样对待下一代…"></textarea>
+    <div style="height:10px"></div>
+    <button class="primary" onclick="addWall()">匿名留言</button>
+    <div id="wallList" style="margin-top:16px"></div>
+  </div>
+
   <div class="tabbar">
     <div class="tab on" id="tabHome" onclick="goHome()"><div style="font-size:17px">◍</div><div style="font-size:10px">语镜</div></div>
-    <div class="tab" id="tabChat" onclick="goChat()"><div style="font-size:17px">✦</div><div style="font-size:10px">聊聊</div></div>
-    <div class="tab" id="tabMine" onclick="goMine()"><div style="font-size:17px">≣</div><div style="font-size:10px">我的回声</div></div>
+    <div class="tab" id="tabQuiz" onclick="goQuiz()"><div style="font-size:17px">✎</div><div style="font-size:10px">小测</div></div>
+    <div class="tab" id="tabWall" onclick="goWall()"><div style="font-size:17px">✉</div><div style="font-size:10px">留言墙</div></div>
+    <div class="tab" id="tabMine" onclick="goMine()"><div style="font-size:17px">≣</div><div style="font-size:10px">我的</div></div>
   </div>
 </div>
 
@@ -245,12 +243,14 @@ const $=s=>document.querySelector(s);
 
 function show(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));$('#'+id).classList.add('on');}
 function go(id){show(id);sync(id);}
-function sync(id){const h=['p-home','p-text','p-audio','p-photo','p-result'].includes(id);
+function sync(id){const h=['p-home','p-text','p-audio','p-result'].includes(id);
  $('#tabHome').classList.toggle('on',h);
- $('#tabChat').classList.toggle('on',id==='p-chat');
+ $('#tabQuiz').classList.toggle('on',id==='p-quiz');
+ $('#tabWall').classList.toggle('on',id==='p-wall');
  $('#tabMine').classList.toggle('on',id==='p-mine');}
 function goHome(){show('p-home');sync('p-home');}
-function goChat(){renderChatQ();show('p-chat');sync('p-chat');}
+function goQuiz(){renderQuiz();show('p-quiz');sync('p-quiz');}
+function goWall(){renderWall();show('p-wall');sync('p-wall');}
 function goMine(){renderRecs();show('p-mine');sync('p-mine');}
 
 /* 高认知对话者：阿德勒课题分离 + 教育辩证，不站队、逻辑清晰 */
@@ -324,15 +324,15 @@ function pick(t){for(const d of DB)if(t.includes(d.key))return d;
 
 let records=[
  {q:'「没编制你什么都不是」',who:'母亲 · 今晚',tag:'his',data:DB[0]},
- {q:'厂门口 · 1998（照片）',who:'母亲年轻时',tag:'my',photo:true},
  {q:'「以后你会感谢我」',who:'父亲 · 上周',tag:'his',data:DB[2]},
+ {q:'「我们那时候更苦」',who:'亲戚 · 上月',tag:'his',data:DB[3]},
 ];
 function renderRecs(){$('#recCount').textContent=records.length;
   $('#recList').innerHTML=records.map((r,i)=>
     `<div class="card rec-item" onclick="openRec(${i})">
       <div><div class="q">${r.q}</div><div class="meta">${r.who}</div></div>
       <div class="${r.tag==='his'?'tag-his':'tag-self'}">${r.tag==='his'?'他的回声':'你的选择'}</div></div>`).join('');}
-function openRec(i){const r=records[i]; if(r.photo) runPhoto(); else render(r.said||r.q.replace(/[「」]/g,''),r.data,false);}
+function openRec(i){const r=records[i]; render(r.said||r.q.replace(/[「」]/g,''),r.data,false);}
 
 let myself=false;
 function setMode(m){myself=m;
@@ -343,12 +343,17 @@ function render(line,d,save=true,mine=false){
   if(!mine){
   $('#resBody').innerHTML=`
    <div class="card sec"><div class="h"><div class="n">1</div>他说出口的</div><p>「${line}」</p></div>
+<div class="card sec"><div class="h"><div class="n">2</div>先拆成两半：事实 vs 评价</div>
+<div class="echo">📌 <b>客观事实</b>：他在表达一个担心、或一个要求。这部分可以听。<br><br>🎭 <b>评价 / 情绪绑架</b>：他顺手加的判断——"你这样就完了""不然你什么都不是"。这是他的恐惧，不是事实，别照单收下。</div></div>
    <div class="card sec"><div class="h"><div class="n">2</div>语镜还原 · 他没说出口的记忆</div>
       <div class="echo">${d.echo}</div></div>
    <div class="card sec"><div class="h"><div class="n">3</div>这是谁的课题</div><p>${d.why}</p></div>
    <div class="card sec"><div class="h"><div class="n">4</div>你的回应 · 课题分离</div>
       <div class="echo">${d.do}</div></div>
-   <div class="quote">${d.quote}</div>
+<div class="card sec"><div class="h"><div class="n">5</div>换个场合，再读一遍</div>
+<p style="margin-bottom:8px">同一句话，在不同情境里分量完全不同。别只听字面，先看它出现在哪：</p>
+<div class="echo">🍚 <b>饭桌上 / 情绪上头时</b>：多半是他多年的情绪习惯，听情绪就好，不必逐条照做。<br><br>🩹 <b>他刚受挫、刚抱怨时</b>：是把自己的焦虑投射给你，和你实际行不行关系不大。<br><br>☕ <b>他平静、和你谈具体事时</b>：才是真建议，值得认真收下。</div></div>
+<div class="quote">${d.quote}</div>
    <p style="font-size:10.5px;color:#6b6a66">* 本地推演 · 仅供练习，不读取你的真实数据。</p>`;
   }else{
   $('#resBody').innerHTML=`
@@ -365,18 +370,43 @@ function render(line,d,save=true,mine=false){
   go('p-result');
 }
 function runText(preset){const line=preset||$('#txtLine').value.trim()||'妈都是为了你好，没有编制，你以后什么都不是。';render(line,pick(line),true,myself);}
-function runPhoto(){
-  records.unshift({q:'厂门口 · 1998（照片）',who:'刚才 · 现在',tag:'my',photo:true});
-  $('#resBody').innerHTML=`
-   <div class="card sec"><div class="h"><div class="n">1</div>这张照片</div><p>按褪色与工装，约 1998 年、某棉纺厂门口。年轻女子抱着纸箱、套袖还新，像在收拾最后一个工位。</p></div>
-   <div class="card sec"><div class="h"><div class="n">2</div>语镜还原</div><div class="echo">那是下岗潮里无数个清晨之一。她当年的慌张，被后来一句句“为你好”盖了三十年。</div></div>
-   <div class="card sec"><div class="h"><div class="n">3</div>课题分离</div><p>她的雪是她那代人的；你要走的路是你的。看见她，不必把自己也活成她。</p></div>
-   <div class="quote">理解一个人从哪来，才不被迫复制他的路。</div>`;
-  go('p-result');
-}
+/* 课题分离小测 */
+const QUIZ=[
+ {q:'妈说："你考不上编，这辈子就完了。"这句话是谁的课题？',
+  opts:['妈的课题——她在怕当年受过的苦','我的课题——前途是我的'],
+  ans:0,why:'"考不上编=这辈子完了"是她的判断，来自她当年的经历。选择走哪条路是你的课题；她的恐惧是她的。'},
+ {q:'领导说："这个交给你我才放心。"这通常意味着？',
+  opts:['他真的特别信任我','他在把自己的活，包装成信任'],
+  ans:1,why:'夸得越重，越要警惕"信任"被用来让你免费加班。先对齐这件事算谁的产出。'},
+ {q:'父母的期待，我必须实现吗？',
+  opts:['必须，不然不孝','可以感激，但不必兑现'],
+  ans:1,why:'期待是他的课题，怎么活是你的课题。感谢他的爱，不交出你的选择。'},
+ {q:'下面哪句，是真正的建议而不是控制？',
+  opts:['"你必须照我说的做。"','"我把我的经验告诉你，你自己决定。"'],
+  ans:1,why:'建议留了出口，允许你自己选；控制没有，你一偏离他就焦虑。'}
+];
+let quizAnswered=false;
+function renderQuiz(){if(quizAnswered)return;quizAnswered=true;
+ $('#quizBox').innerHTML=QUIZ.map((x,i)=>
+  `<div class="card sec"><p style="font-size:13.5px;line-height:1.7;margin-bottom:10px"><b>${i+1}.</b> ${x.q}</p>
+   ${x.opts.map((o,j)=>`<div class="chip" style="display:block;margin-bottom:8px" onclick="answerQ(${i},${j})">${o}</div>`).join('')}
+   <div id="qa${i}" style="display:none;margin-top:8px"></div></div>`).join('');}
+function answerQ(i,j){const box=$('#qa'+i);if(box.style.display==='block')return;
+ const x=QUIZ[i];const ok=j===x.ans;
+ box.innerHTML=`<div class="echo">${ok?'✓ 答对了。':'再想想——'} ${x.why}</div>`;box.style.display='block';}
+
+/* 留言墙 */
+let wall=[
+ {n:'一个普通学生',t:'"我们那时候比你苦多了"——听完那句话我沉默了很久。不是反驳，是忽然懂了：他没吃过我的苦，我也不必复制他的。'},
+ {n:'刚当妈妈的人',t:'当妈后才发现，我催孩子写作业时，嘴里说的全是我妈三十年前对我说过的话。语镜让我停了一秒。'},
+ {n:'被催考公三年',t:'希望下一个像我的人，被允许走一条"不稳定"的路。教育不是把他放进我画好的框里。'},
+];
+function renderWall(){$('#wallList').innerHTML=wall.map(w=>
+ `<div class="card sec" style="margin-bottom:10px"><div style="font-size:11px;color:var(--gold);margin-bottom:6px">${w.n}</div>
+  <p style="font-size:13px;line-height:1.75">${w.t}</p></div>`).join('');}
+function addWall(){const v=$('#wallInput').value.trim();if(!v)return;
+ wall.unshift({n:'匿名 · 刚刚',t:v});$('#wallInput').value='';renderWall();}
 let rs=0,rt=null,ron=false;
-function loadPhoto(inp){const f=inp.files[0];if(!f)return;const url=URL.createObjectURL(f);
- const box=$('#photoPrev');box.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:cover">`;}
 function toggleRec(){ron=!ron;const b=$('#recBtn');
  if(ron){b.style.background='var(--teal)';rs=0;$('#recT').textContent='00:00';
   rt=setInterval(()=>{rs++;$('#recT').textContent=String(Math.floor(rs/60)).padStart(2,'0')+':'+String(rs%60).padStart(2,'0');},1000);}
